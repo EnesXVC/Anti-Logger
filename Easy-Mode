@@ -1,5 +1,6 @@
 local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
+local SetClipboard = setclipboard or toclipboard or (Clipboard and Clipboard.set)
 
 local function showNotification(title, message)
     pcall(function()
@@ -16,14 +17,9 @@ showNotification("Anti-Logger", "Blocking any shady requests...")
 local dangerousDomains = {
     "discord",
     "webhooks",
-    "discord",
-    "discordapp",
     "webhook",
-    "anti",
-    "protected",
-    "protected.webhook",
+	"anti",
     "webho.ok",
-    "web",
     "webhook.app"
 }
 
@@ -31,21 +27,26 @@ local function isBlockedUrl(url)
     url = tostring(url):lower()
     for _, keyword in ipairs(dangerousDomains) do
         if url:find(keyword) then
-            return true
+            return true, "Keyword: " .. keyword
         end
     end
     return false
 end
 
+local function blockAndWarn(url, reason)
+    warn("Blocked request to: " .. url .. " | Reason: " .. reason)
+    if SetClipboard then
+        SetClipboard(url)
+    end
+    showNotification("Request Blocked", "Blocked suspicious request. Reason: " .. reason)
+end
+
 local function handleHttpRequest(requestFunction)
     return function(args)
         local url = args.Url or args.URL or ""
-
-        if isBlockedUrl(url) then
-            showNotification("Request Blocked", "Yo, blocked a sketchy HTTP request.")
-
-            warn("Blocked request to: " .. url)
-
+        local blocked, reason = isBlockedUrl(url)
+        if blocked then
+            blockAndWarn(url, reason)
             return nil
         end
         return requestFunction(args)
@@ -84,10 +85,10 @@ pcall(function()
     local originalRequestAsync = HttpService.RequestAsync
     hookfunction(originalRequestAsync, function(self, args)
         local url = args.Url or args.URL or ""
-        if isBlockedUrl(url) then
-            showNotification("Request Blocked", "Yo, blocked a sketchy HTTP request.")
-            warn("Blocked request to: " .. url)
-            return nil 
+        local blocked, reason = isBlockedUrl(url)
+        if blocked then
+            blockAndWarn(url, reason)
+            return nil
         end
         return originalRequestAsync(self, args)
     end)
