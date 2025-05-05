@@ -18,7 +18,7 @@ local dangerousDomains = {
     "discord",
     "webhooks",
     "webhook",
-	"anti",
+    "anti",
     "webho.ok",
     "webhook.app"
 }
